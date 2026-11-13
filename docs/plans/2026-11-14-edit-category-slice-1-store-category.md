@@ -1,7 +1,5 @@
 # Edit category slice 1: store a chosen category Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** The `transactions` table can hold a chosen category per row, and a row without one reports the category its shop rule gives, behind the feature switch `edit-category`.
 
 **Architecture:** One new module, `src/lib/transactions.js`, holds the two rules this slice adds: making sure the nullable `category` column exists, and reporting a row's category (chosen when valid, otherwise the shop rule). The server adds the column at start-up only when the switch is on, so with the switch off the ledger file is not touched. The importer already writes three columns and leaves `category` alone, so the slice pins that with a test rather than changing it.
