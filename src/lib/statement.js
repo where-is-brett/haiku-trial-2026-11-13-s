@@ -79,7 +79,11 @@ export function readStatement(text) {
     if (!/[0-9]/.test(amount)) {
       throw new StatementError(`line ${lineNo}: the amount must contain a number`);
     }
-    rows.push({ date: parseDate(date), description, cents: parseAmount(amount) });
+    const cents = parseAmount(amount);
+    if (Number.isNaN(cents)) {
+      throw new StatementError(`line ${lineNo}: the amount must read as a number`);
+    }
+    rows.push({ date: parseDate(date), description, cents });
   }
   return rows;
 }

@@ -37,6 +37,13 @@ test('a file with another header, a bad date or a short row is refused with a pl
   assert.throws(() => readStatement(''), StatementError);
 });
 
+test('an amount with a digit that does not read as a number is refused, naming the line', () => {
+  assert.throws(
+    () => readStatement('Date,Description,Amount\r\n03/08/2026,Shop,"..5"\r\n'),
+    (err) => err instanceof StatementError && err.message.startsWith('line 2: '),
+  );
+});
+
 test('a byte-order mark before the header is ignored', () => {
   assert.deepEqual(readStatement('﻿Date,Description,Amount\r\n03/08/2026,A,1.00\r\n'), [
     { date: '2026-08-03', description: 'A', cents: 100 },
