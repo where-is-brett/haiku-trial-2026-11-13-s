@@ -55,6 +55,28 @@ test('a second upload leaves the stored rows exactly as they were', () => {
   assert.deepEqual(db.prepare('SELECT * FROM transactions ORDER BY id').all(), before);
 });
 
+test('a stored line uploaded twice adds only the copy the ledger lacks', () => {
+  const db = ledger();
+  importStatement(db, 'Date,Description,Amount\r\n10/01/2027,Coffee,5.00\r\n');
+  const twice = 'Date,Description,Amount\r\n10/01/2027,Coffee,5.00\r\n10/01/2027,Coffee,5.00\r\n';
+  assert.deepEqual(importStatement(db, twice), { added: 1, skipped: 1 });
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM transactions WHERE description = 'Coffee'").get().n, 2);
+});
+
+test('a line with the same description and cents on another date is a new row', () => {
+  const db = ledger();
+  importStatement(db, 'Date,Description,Amount\r\n03/08/2026,Kestrel Coffee Bar,6.50\r\n');
+  const otherDate = 'Date,Description,Amount\r\n04/08/2026,Kestrel Coffee Bar,6.50\r\n';
+  assert.deepEqual(importStatement(db, otherDate), { added: 1, skipped: 0 });
+});
+
+test('a line with the same date and description but other cents is a new row', () => {
+  const db = ledger();
+  importStatement(db, 'Date,Description,Amount\r\n03/08/2026,Kestrel Coffee Bar,6.50\r\n');
+  const otherCents = 'Date,Description,Amount\r\n03/08/2026,Kestrel Coffee Bar,7.50\r\n';
+  assert.deepEqual(importStatement(db, otherCents), { added: 1, skipped: 0 });
+});
+
 test('a write that fails part-way rolls back the whole upload', () => {
   const db = ledger();
   db.exec("CREATE TRIGGER no_boom BEFORE INSERT ON transactions WHEN NEW.description = 'Boom' BEGIN SELECT RAISE(ABORT, 'no'); END");
