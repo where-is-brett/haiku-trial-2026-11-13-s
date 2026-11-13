@@ -3,12 +3,14 @@ import http from 'node:http';
 import { DatabaseSync } from 'node:sqlite';
 import { featureOn } from './lib/flags.js';
 import { parseMonth, monthRows, totalsByCategory, renderMonth } from './lib/month.js';
+import { ensureCategoryColumn } from './lib/transactions.js';
 
 const port = Number(process.env.PORT ?? 3000);
 const db = new DatabaseSync(process.env.LEDGER_DB ?? 'ledger.db');
 db.exec(
   'CREATE TABLE IF NOT EXISTS transactions (id INTEGER PRIMARY KEY, date TEXT, description TEXT, cents INTEGER)',
 );
+if (featureOn('edit-category')) ensureCategoryColumn(db);
 
 function page(body) {
   return `<!doctype html>
