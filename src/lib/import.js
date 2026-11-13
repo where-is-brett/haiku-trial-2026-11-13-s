@@ -2,7 +2,7 @@
 
 import { readStatement } from './statement.js';
 
-// A NUL cannot appear in a date, a description or a number, so it keeps keys apart.
+// The date and cents never contain a NUL, which keeps the separator unambiguous.
 function keyOf(row) {
   return [row.date, row.description, row.cents].join('\u0000');
 }
@@ -22,13 +22,20 @@ export function importStatement(db, text) {
   const insert = db.prepare('INSERT INTO transactions (date, description, cents) VALUES (?, ?, ?)');
   let added = 0;
   let skipped = 0;
-  for (const row of rows) {
-    if (stored.has(keyOf(row))) {
-      skipped += 1;
-    } else {
-      insert.run(row.date, row.description, row.cents);
-      added += 1;
+  db.exec('BEGIN');
+  try {
+    for (const row of rows) {
+      if (stored.has(keyOf(row))) {
+        skipped += 1;
+      } else {
+        insert.run(row.date, row.description, row.cents);
+        added += 1;
+      }
     }
+    db.exec('COMMIT');
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
   }
   return { added, skipped };
 }

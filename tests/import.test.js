@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
 import { importStatement } from '../src/lib/import.js';
+import { StatementError } from '../src/lib/statement.js';
 
 const STATEMENT = 'Date,Description,Amount\r\n03/08/2026,Greenbarrow Fresh REF 1021,54.20\r\n19/08/2026,"Smith, J",(40.00)\r\n';
 
@@ -37,4 +38,27 @@ test('a row with the same date and amount but another description is a new row',
   importStatement(db, STATEMENT);
   const other = 'Date,Description,Amount\r\n03/08/2026,Someone Else,54.20\r\n';
   assert.deepEqual(importStatement(db, other), { added: 1, skipped: 0 });
+});
+
+test('a refused file adds nothing, even when the bad row is last', () => {
+  const db = ledger();
+  const bad = 'Date,Description,Amount\r\n03/08/2026,Kestrel Coffee Bar,6.50\r\n04/08/2026,Broken,abc\r\n';
+  assert.throws(() => importStatement(db, bad), StatementError);
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM transactions').get().n, 0);
+});
+
+test('a second upload leaves the stored rows exactly as they were', () => {
+  const db = ledger();
+  importStatement(db, STATEMENT);
+  const before = db.prepare('SELECT * FROM transactions ORDER BY id').all();
+  importStatement(db, STATEMENT);
+  assert.deepEqual(db.prepare('SELECT * FROM transactions ORDER BY id').all(), before);
+});
+
+test('a write that fails part-way rolls back the whole upload', () => {
+  const db = ledger();
+  db.exec("CREATE TRIGGER no_boom BEFORE INSERT ON transactions WHEN NEW.description = 'Boom' BEGIN SELECT RAISE(ABORT, 'no'); END");
+  const text = 'Date,Description,Amount\r\n03/08/2026,Kestrel Coffee Bar,6.50\r\n04/08/2026,Boom,1.00\r\n';
+  assert.throws(() => importStatement(db, text));
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM transactions').get().n, 0);
 });
