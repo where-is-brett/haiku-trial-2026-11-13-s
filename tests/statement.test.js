@@ -78,3 +78,28 @@ test('a byte-order mark before the header is ignored', () => {
     { date: '2026-08-03', description: 'A', cents: 100 },
   ]);
 });
+
+const REFUSED_DATES = ['31/02/2026', '29/02/2026', '00/13/2026', '00/00/0000', '32/01/2026', '15/00/2026'];
+
+for (const date of REFUSED_DATES) {
+  test(`the date ${date} does not exist and is refused with a StatementError naming line 2`, () => {
+    assert.throws(
+      () => readStatement(`Date,Description,Amount\r\n${date},Shop,1.00\r\n`),
+      (err) => err instanceof StatementError && err.message.startsWith('line 2: '),
+    );
+  });
+}
+
+const ACCEPTED_DATES = [
+  ['29/02/2028', '2028-02-29'],
+  ['31/12/2026', '2026-12-31'],
+  ['01/01/2026', '2026-01-01'],
+];
+
+for (const [date, iso] of ACCEPTED_DATES) {
+  test(`the date ${date} is a real date and is accepted as ${iso}`, () => {
+    assert.deepEqual(readStatement(`Date,Description,Amount\r\n${date},Shop,1.00\r\n`), [
+      { date: iso, description: 'Shop', cents: 100 },
+    ]);
+  });
+}

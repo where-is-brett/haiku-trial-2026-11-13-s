@@ -5,6 +5,20 @@ import { parseAmount } from './money.js';
 
 const HEADER = 'Date,Description,Amount';
 const DATE_SHAPE = /^\d{2}\/\d{2}\/\d{4}$/;
+const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+// Gregorian rule: divisible by 4, except centuries not divisible by 400.
+function isLeapYear(year) {
+  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+}
+
+// Reads a DD/MM/YYYY date of the right shape and says whether it exists.
+function isRealDate(text) {
+  const [day, month, year] = text.split('/').map(Number);
+  if (month < 1 || month > 12) return false;
+  const days = month === 2 && isLeapYear(year) ? 29 : DAYS_IN_MONTH[month - 1];
+  return day >= 1 && day <= days;
+}
 
 // Raised for any statement that is refused. The message is the plain reason.
 export class StatementError extends Error {
@@ -88,6 +102,9 @@ export function readStatement(text) {
     const [date, description, amount] = fields;
     if (!DATE_SHAPE.test(date)) {
       throw new StatementError(`line ${lineNo}: the date must be DD/MM/YYYY`);
+    }
+    if (!isRealDate(date)) {
+      throw new StatementError(`line ${lineNo}: the date must be a real date in DD/MM/YYYY`);
     }
     if (!/[0-9]/.test(amount)) {
       throw new StatementError(`line ${lineNo}: the amount must contain a number`);
