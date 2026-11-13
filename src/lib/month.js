@@ -29,7 +29,7 @@ export function totalsByCategory(rows) {
   const totals = Object.fromEntries(Object.keys(CATEGORIES).map((key) => [key, 0]));
   totals.all = 0;
   for (const row of rows) {
-    const category = categoryFor(row.description);
+    const category = categoryFor(row.description ?? '');
     const cents = signedCents(category, row.cents);
     totals[category] += cents;
     totals.all += cents;

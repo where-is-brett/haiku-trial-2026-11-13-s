@@ -1,7 +1,5 @@
 # Month page slice 1: totals by category Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** `/month?m=YYYY-MM` shows one row per category with that month's total, a grand total row, and previous and next month links, behind the feature switch `month-page`.
 
 **Architecture:** Pure helpers in `src/lib/month.js` (month parsing, month shifting, signed totals, HTML body) and a feature switch in `src/lib/flags.js`. The server reads the month's rows with one SQL query and gives the page body to the existing `page()` wrapper. With the switch off, `/month` is an ordinary 404.

@@ -39,6 +39,13 @@ test('each category total is the sum of its rows, money back counting negative',
   assert.equal(totals.transport, 0);
 });
 
+test('a row with a NULL description files under other', () => {
+  const totals = totalsByCategory([{ description: null, cents: 500 }]);
+  assert.equal(totals.other, 500);
+  assert.equal(totals.groceries, 0);
+  assert.equal(totals.all, 500);
+});
+
 test('the grand total is the sum of every category total', () => {
   const totals = totalsByCategory([
     { description: 'Greenbarrow Fresh', cents: 5420 },
