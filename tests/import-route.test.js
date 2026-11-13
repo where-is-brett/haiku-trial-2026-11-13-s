@@ -153,3 +153,22 @@ test('with the switch off, POST /import is not found and adds nothing', async ()
     child.kill();
   }
 });
+
+test('when the upload fails outside the reader, POST /import answers 500 and the server stays up', async () => {
+  const dbFile = freshLedger();
+  const trigger = new DatabaseSync(dbFile);
+  trigger.exec("CREATE TRIGGER fail_all BEFORE INSERT ON transactions BEGIN SELECT RAISE(ABORT, 'disk full'); END");
+  trigger.close();
+  const { child, base } = await start(dbFile, 'statement-import');
+  try {
+    const res = await fetch(`${base}/import`, { method: 'POST', body: upload(STATEMENT) });
+    const text = await res.text();
+    assert.equal(res.status, 500);
+    assert.match(res.headers.get('content-type'), /^text\/plain/);
+    assert.match(text, /The statement could not be imported; nothing was added\./);
+    const after = await fetch(`${base}/import`);
+    assert.equal(after.status, 200);
+  } finally {
+    child.kill();
+  }
+});

@@ -59,8 +59,17 @@ const server = http.createServer(async (req, res) => {
         body: Readable.toWeb(req),
         duplex: 'half',
       });
+      let body;
+      try {
+        body = page(await handleImport(db, request));
+      } catch (error) {
+        console.error(error);
+        res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+        res.end('The statement could not be imported; nothing was added.');
+        return;
+      }
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-      res.end(page(await handleImport(db, request)));
+      res.end(body);
       return;
     }
   }
