@@ -4,9 +4,11 @@
 export function parseAmount(text) {
   const trimmed = String(text).trim();
   const negative = trimmed.startsWith('-');
+  const bracketed = trimmed.startsWith('(') && trimmed.endsWith(')');
   const digits = trimmed.replace(/[^0-9.]/g, '');
   const cents = Math.round(parseFloat(digits) * 100);
-  return negative ? -cents : cents;
+  const signed = negative || bracketed ? -cents : cents;
+  return signed === 0 ? 0 : signed;
 }
 
 // Writes whole cents as a plain decimal such as 1234.50 or -40.00.
