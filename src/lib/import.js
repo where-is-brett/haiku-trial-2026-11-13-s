@@ -1,0 +1,34 @@
+// src/lib/import.js
+
+import { readStatement } from './statement.js';
+
+// A NUL cannot appear in a date, a description or a number, so it keeps keys apart.
+function keyOf(row) {
+  return [row.date, row.description, row.cents].join('\u0000');
+}
+
+// Stores the statement rows that are not stored yet and reports the counts.
+// A row matches a stored row when date, description and cents are all equal.
+// Rows added by this upload are not compared with each other, so identical
+// lines in one file are both stored.
+export function importStatement(db, text) {
+  const rows = readStatement(text);
+
+  const stored = new Set();
+  for (const row of db.prepare('SELECT date, description, cents FROM transactions').iterate()) {
+    stored.add(keyOf(row));
+  }
+
+  const insert = db.prepare('INSERT INTO transactions (date, description, cents) VALUES (?, ?, ?)');
+  let added = 0;
+  let skipped = 0;
+  for (const row of rows) {
+    if (stored.has(keyOf(row))) {
+      skipped += 1;
+    } else {
+      insert.run(row.date, row.description, row.cents);
+      added += 1;
+    }
+  }
+  return { added, skipped };
+}
