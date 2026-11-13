@@ -1,7 +1,8 @@
 // tests/month.test.js
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseMonth, shiftMonth, signedCents, totalsByCategory } from '../src/lib/month.js';
+import { DatabaseSync } from 'node:sqlite';
+import { monthRows, parseMonth, renderMonth, shiftMonth, signedCents, totalsByCategory, totalsByCategory as totals } from '../src/lib/month.js';
 
 test('only YYYY-MM with a real month is accepted', () => {
   assert.equal(parseMonth('2026-08'), '2026-08');
@@ -51,4 +52,40 @@ test('no rows gives every category and the grand total at zero', () => {
   const totals = totalsByCategory([]);
   assert.deepEqual(Object.keys(totals).sort(), ['all', 'bills', 'dining', 'groceries', 'health', 'income', 'other', 'shopping', 'transport'].sort());
   assert.ok(Object.values(totals).every((cents) => cents === 0));
+});
+
+function ledger(rows) {
+  const db = new DatabaseSync(':memory:');
+  db.exec('CREATE TABLE transactions (id INTEGER PRIMARY KEY, date TEXT, description TEXT, cents INTEGER)');
+  for (const [date, description, cents] of rows) {
+    db.prepare('INSERT INTO transactions (date, description, cents) VALUES (?, ?, ?)').run(date, description, cents);
+  }
+  return db;
+}
+
+test('a month holds its own rows, including its first and last day', () => {
+  const db = ledger([
+    ['2026-07-31', 'Greenbarrow Fresh', 100],
+    ['2026-08-01', 'Greenbarrow Fresh', 200],
+    ['2026-08-31', 'Greenbarrow Fresh', 300],
+    ['2026-09-01', 'Greenbarrow Fresh', 400],
+  ]);
+  assert.deepEqual(monthRows(db, '2026-08').map((r) => r.cents).sort(), [200, 300]);
+});
+
+test('the page body gives a total cell per category and a grand total cell', () => {
+  const html = renderMonth('2026-08', totals([{ description: 'Greenbarrow Fresh REF 1021', cents: 5420 }]));
+  assert.match(html, /<td data-category="groceries" data-total="54\.20">54\.20<\/td>/);
+  assert.match(html, /<td data-category="all" data-total="54\.20">54\.20<\/td>/);
+  assert.match(html, />Groceries</);
+  assert.match(html, /href="\/month\?m=2026-07"/);
+  assert.match(html, /href="\/month\?m=2026-09"/);
+});
+
+test('an empty month shows 0.00 everywhere and still links to its neighbours', () => {
+  const html = renderMonth('2026-06', totals([]));
+  assert.match(html, /<td data-category="groceries" data-total="0\.00">0\.00<\/td>/);
+  assert.match(html, /<td data-category="all" data-total="0\.00">0\.00<\/td>/);
+  assert.match(html, /href="\/month\?m=2026-05"/);
+  assert.match(html, /href="\/month\?m=2026-07"/);
 });
