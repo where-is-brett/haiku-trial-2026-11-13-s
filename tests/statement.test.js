@@ -44,6 +44,34 @@ test('an amount with a digit that does not read as a number is refused, naming t
   );
 });
 
+const ACCEPTED_AMOUNTS = [
+  ['12.50', 1250],
+  ['-2100.00', -210000],
+  ['(40.00)', -4000],
+  ['"1,040.00"', 104000],
+  ['0.50', 50],
+  ['.50', 50],
+];
+
+for (const [amount, cents] of ACCEPTED_AMOUNTS) {
+  test(`the amount ${amount} is accepted as ${cents} cents`, () => {
+    assert.deepEqual(readStatement(`Date,Description,Amount\r\n03/08/2026,Shop,${amount}\r\n`), [
+      { date: '2026-08-03', description: 'Shop', cents },
+    ]);
+  });
+}
+
+const REFUSED_AMOUNTS = ['1.2.3', '12abc', '(40.00', '40.00)', '-(12.50)', '1 2'];
+
+for (const amount of REFUSED_AMOUNTS) {
+  test(`the amount ${amount} is refused with a StatementError naming line 2`, () => {
+    assert.throws(
+      () => readStatement(`Date,Description,Amount\r\n03/08/2026,Shop,${amount}\r\n`),
+      (err) => err instanceof StatementError && err.message.startsWith('line 2: '),
+    );
+  });
+}
+
 test('a byte-order mark before the header is ignored', () => {
   assert.deepEqual(readStatement('﻿Date,Description,Amount\r\n03/08/2026,A,1.00\r\n'), [
     { date: '2026-08-03', description: 'A', cents: 100 },

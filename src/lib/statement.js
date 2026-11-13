@@ -51,6 +51,14 @@ export function splitCsvLine(line) {
   return fields;
 }
 
+// One regular expression holds every plain amount form, empty and "-" included.
+const PLAIN_AMOUNT = /^(-|-?(\d+(\.\d*)?|\.\d+)|\((\d+(\.\d*)?|\.\d+)\))?$/;
+
+// The seam for the amount rule. Commas are removed before matching; spaces are not.
+export function isPlainAmount(text) {
+  return PLAIN_AMOUNT.test(String(text).trim().replace(/,/g, ''));
+}
+
 // Reads a whole statement into rows, or throws a StatementError naming the
 // first bad line. Every line is checked before anything is returned.
 export function readStatement(text) {
@@ -78,6 +86,9 @@ export function readStatement(text) {
     }
     if (!/[0-9]/.test(amount)) {
       throw new StatementError(`line ${lineNo}: the amount must contain a number`);
+    }
+    if (!isPlainAmount(amount)) {
+      throw new StatementError(`line ${lineNo}: the amount must be a plain number such as 12.50 or (40.00)`);
     }
     const cents = parseAmount(amount);
     if (Number.isNaN(cents)) {
