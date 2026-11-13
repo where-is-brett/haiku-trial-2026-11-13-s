@@ -3,7 +3,7 @@
 // Category keys and their labels, in the order the spec lists them.
 export const CATEGORIES = {
   groceries: 'Groceries',
-  eating_out: 'Eating out',
+  dining: 'Eating out',
   transport: 'Transport',
   bills: 'Bills',
   shopping: 'Shopping',
@@ -18,10 +18,10 @@ const SHOPS = [
   { name: 'Pennywhistle Market', category: 'groceries' },
   { name: 'Lowtide Grocers', category: 'groceries' },
   { name: 'Harvest Lane Foods', category: 'groceries' },
-  { name: 'Pasta, Pizza & Co', category: 'eating_out' },
-  { name: 'Kestrel Coffee Bar', category: 'eating_out' },
-  { name: 'Saltbush Noodle House', category: 'eating_out' },
-  { name: 'Ember Grill', category: 'eating_out' },
+  { name: 'Pasta, Pizza & Co', category: 'dining' },
+  { name: 'Kestrel Coffee Bar', category: 'dining' },
+  { name: 'Saltbush Noodle House', category: 'dining' },
+  { name: 'Ember Grill', category: 'dining' },
   { name: 'Waverly Fuel Stop', category: 'transport' },
   { name: 'Tramline Fares', category: 'transport' },
   { name: 'Lantern Rideshare', category: 'transport' },

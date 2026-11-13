@@ -8,10 +8,10 @@ const SHOPS = [
   ['Pennywhistle Market', 'groceries'],
   ['Lowtide Grocers', 'groceries'],
   ['Harvest Lane Foods', 'groceries'],
-  ['Pasta, Pizza & Co', 'eating_out'],
-  ['Kestrel Coffee Bar', 'eating_out'],
-  ['Saltbush Noodle House', 'eating_out'],
-  ['Ember Grill', 'eating_out'],
+  ['Pasta, Pizza & Co', 'dining'],
+  ['Kestrel Coffee Bar', 'dining'],
+  ['Saltbush Noodle House', 'dining'],
+  ['Ember Grill', 'dining'],
   ['Waverly Fuel Stop', 'transport'],
   ['Tramline Fares', 'transport'],
   ['Lantern Rideshare', 'transport'],
@@ -41,7 +41,7 @@ test('each shop name as a description files under its category', () => {
 
 test('a shop name in another case still matches', () => {
   assert.equal(categoryFor('GREENBARROW FRESH'), 'groceries');
-  assert.equal(categoryFor('pasta, pizza & co'), 'eating_out');
+  assert.equal(categoryFor('pasta, pizza & co'), 'dining');
 });
 
 test('a shop name inside a longer description still matches', () => {
@@ -60,7 +60,7 @@ test('a description that matches no shop files under other', () => {
 test('the eight category labels are the spec labels', () => {
   assert.deepEqual(CATEGORIES, {
     groceries: 'Groceries',
-    eating_out: 'Eating out',
+    dining: 'Eating out',
     transport: 'Transport',
     bills: 'Bills',
     shopping: 'Shopping',
