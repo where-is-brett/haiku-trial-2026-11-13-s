@@ -1,8 +1,10 @@
 // src/server.js
 import http from 'node:http';
+import { Readable } from 'node:stream';
 import { DatabaseSync } from 'node:sqlite';
 import { featureOn } from './lib/flags.js';
 import { parseMonth, monthRows, totalsByCategory, renderMonth } from './lib/month.js';
+import { renderImportPage, handleImport } from './lib/import-page.js';
 
 const port = Number(process.env.PORT ?? 3000);
 const db = new DatabaseSync(process.env.LEDGER_DB ?? 'ledger.db');
@@ -24,7 +26,7 @@ ${body}
 `;
 }
 
-const server = http.createServer((req, res) => {
+const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
   if (url.pathname === '/') {
     const { n } = db.prepare('SELECT COUNT(*) AS n FROM transactions').get();
@@ -43,6 +45,24 @@ const server = http.createServer((req, res) => {
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
     res.end(page(renderMonth(m, totalsByCategory(monthRows(db, m)))));
     return;
+  }
+  if (url.pathname === '/import' && featureOn('statement-import')) {
+    if (req.method === 'GET') {
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+      res.end(page(renderImportPage()));
+      return;
+    }
+    if (req.method === 'POST') {
+      const request = new Request(url, {
+        method: 'POST',
+        headers: req.headers,
+        body: Readable.toWeb(req),
+        duplex: 'half',
+      });
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+      res.end(page(await handleImport(db, request)));
+      return;
+    }
   }
   res.writeHead(404,{ 'content-type': 'text/plain; charset=utf-8' });
   res.end('Not found');
