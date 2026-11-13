@@ -1,6 +1,8 @@
 // src/server.js
 import http from 'node:http';
 import { DatabaseSync } from 'node:sqlite';
+import { featureOn } from './lib/flags.js';
+import { parseMonth, monthRows, totalsByCategory, renderMonth } from './lib/month.js';
 
 const port = Number(process.env.PORT ?? 3000);
 const db = new DatabaseSync(process.env.LEDGER_DB ?? 'ledger.db');
@@ -31,7 +33,18 @@ const server = http.createServer((req, res) => {
     res.end(page(body));
     return;
   }
-  res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+  if (url.pathname === '/month' && featureOn('month-page')) {
+    const m = parseMonth(url.searchParams.get('m'));
+    if (m === null) {
+      res.writeHead(400, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('The month is needed as YYYY-MM');
+      return;
+    }
+    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+    res.end(page(renderMonth(m, totalsByCategory(monthRows(db, m)))));
+    return;
+  }
+  res.writeHead(404,{ 'content-type': 'text/plain; charset=utf-8' });
   res.end('Not found');
 });
 
