@@ -54,9 +54,14 @@ export function splitCsvLine(line) {
 // One regular expression holds every plain amount form, empty and "-" included.
 const PLAIN_AMOUNT = /^(-|-?(\d+(\.\d*)?|\.\d+)|\((\d+(\.\d*)?|\.\d+)\))?$/;
 
-// The seam for the amount rule. Commas are removed before matching; spaces are not.
+// A comma is a thousands separator only in groups of three digits after one to three leading digits.
+const THOUSANDS = /^(-|\()?\d{1,3}(,\d{3})+(\.\d*)?\)?$/;
+
+// The seam for the amount rule. A comma is removed before matching only when it is a thousands separator; any other comma stays and makes the amount not plain.
 export function isPlainAmount(text) {
-  return PLAIN_AMOUNT.test(String(text).trim().replace(/,/g, ''));
+  const amount = String(text).trim();
+  const ungrouped = THOUSANDS.test(amount) ? amount.replace(/,/g, '') : amount;
+  return PLAIN_AMOUNT.test(ungrouped);
 }
 
 // Reads a whole statement into rows, or throws a StatementError naming the

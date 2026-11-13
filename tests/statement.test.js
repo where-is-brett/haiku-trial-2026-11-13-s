@@ -49,6 +49,7 @@ const ACCEPTED_AMOUNTS = [
   ['-2100.00', -210000],
   ['(40.00)', -4000],
   ['"1,040.00"', 104000],
+  ['"12,345"', 1234500],
   ['0.50', 50],
   ['.50', 50],
 ];
@@ -61,7 +62,7 @@ for (const [amount, cents] of ACCEPTED_AMOUNTS) {
   });
 }
 
-const REFUSED_AMOUNTS = ['1.2.3', '12abc', '(40.00', '40.00)', '-(12.50)', '1 2'];
+const REFUSED_AMOUNTS = ['1.2.3', '12abc', '(40.00', '40.00)', '-(12.50)', '1 2', '"12,34"', '"1,04"', '"1,0400"', '",123"', '"123,"'];
 
 for (const amount of REFUSED_AMOUNTS) {
   test(`the amount ${amount} is refused with a StatementError naming line 2`, () => {
