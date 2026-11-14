@@ -32,7 +32,7 @@ const server = http.createServer(async (req, res) => {
   if (url.pathname === '/') {
     const { n } = db.prepare('SELECT COUNT(*) AS n FROM transactions').get();
     let body = n === 0 ? '<p>Nothing imported yet</p>' : `<p>${n} transactions imported</p>`;
-    if (featureOn('statement-import')) body += renderMonthList(monthsWithTransactions(db));
+    if (featureOn('statement-import') && featureOn('month-page')) body += renderMonthList(monthsWithTransactions(db));
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
     res.end(page(body));
     return;

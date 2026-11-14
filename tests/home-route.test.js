@@ -49,7 +49,7 @@ test('with the switch on, the home page lists the months newest first', async ()
     ['2026-07-31', 'Greenbarrow Fresh', 9999],
     ['2026-08-03', 'Greenbarrow Fresh REF 1021', 5420],
   ]);
-  const { child, base } = await start(dbFile, 'statement-import');
+  const { child, base } = await start(dbFile, 'statement-import,month-page');
   try {
     const res = await fetch(`${base}/`);
     const html = await res.text();
@@ -60,6 +60,22 @@ test('with the switch on, the home page lists the months newest first', async ()
     assert.notEqual(aug, -1);
     assert.notEqual(jul, -1);
     assert.ok(aug < jul, 'August should be listed before July');
+  } finally {
+    child.kill();
+  }
+});
+
+test('with only statement-import on, the home page shows the count and no month list', async () => {
+  const dbFile = makeLedger([
+    ['2026-07-31', 'Greenbarrow Fresh', 9999],
+    ['2026-08-03', 'Greenbarrow Fresh REF 1021', 5420],
+  ]);
+  const { child, base } = await start(dbFile, 'statement-import');
+  try {
+    const html = await (await fetch(`${base}/`)).text();
+    assert.match(html, /2 transactions imported/);
+    assert.doesNotMatch(html, /\/month\?m=/);
+    assert.doesNotMatch(html, /<h2>Months<\/h2>/);
   } finally {
     child.kill();
   }
