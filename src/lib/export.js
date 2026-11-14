@@ -34,12 +34,17 @@ export function exportRows(db, m) {
     .map(({ date, description, cents }) => ({ date, description, cents }));
 }
 
+// A description that starts with = + or @ would be run as a formula by a spreadsheet, so it gets a leading apostrophe.
+function neutralise(text) {
+  return /^[=+@]/.test(text) ? `'${text}` : text;
+}
+
 // Returns the whole CSV text for a month's rows, header first.
 export function renderCsv(rows) {
   const lines = [csvLine(HEADER)];
   for (const { date, description, cents } of rows) {
     const text = description ?? '';
-    lines.push(csvLine([fileDate(date), text, formatCents(cents), CATEGORIES[categoryFor(text)]]));
+    lines.push(csvLine([fileDate(date), neutralise(text), formatCents(cents), CATEGORIES[categoryFor(text)]]));
   }
   return lines.join('');
 }

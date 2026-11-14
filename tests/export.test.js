@@ -41,6 +41,32 @@ test('a plain field is written bare', () => {
   assert.equal(csvField(-40), '-40');
 });
 
+test('a description that starts with an equals sign, a plus or an at sign gets a leading apostrophe', () => {
+  assert.equal(
+    renderCsv([{ date: '2026-08-05', description: '=HYPERLINK("http://x","y")', cents: 100 }]),
+    'Date,Description,Amount,Category\r\n05/08/2026,"\'=HYPERLINK(""http://x"",""y"")",1.00,Other\r\n',
+  );
+  assert.equal(
+    renderCsv([{ date: '2026-08-06', description: '+Ember Grill', cents: 100 }]),
+    "Date,Description,Amount,Category\r\n06/08/2026,'+Ember Grill,1.00,Eating out\r\n",
+  );
+  assert.equal(
+    renderCsv([{ date: '2026-08-07', description: '@Ember Grill', cents: 100 }]),
+    "Date,Description,Amount,Category\r\n07/08/2026,'@Ember Grill,1.00,Eating out\r\n",
+  );
+});
+
+test('the apostrophe leaves the amount, the category and other descriptions alone', () => {
+  assert.equal(
+    renderCsv([{ date: '2026-08-08', description: '=Ember Grill', cents: -4000 }]),
+    "Date,Description,Amount,Category\r\n08/08/2026,'=Ember Grill,-40.00,Eating out\r\n",
+  );
+  assert.equal(
+    renderCsv([{ date: '2026-08-09', description: 'Ember Grill =', cents: 100 }]),
+    'Date,Description,Amount,Category\r\n09/08/2026,Ember Grill =,1.00,Eating out\r\n',
+  );
+});
+
 test('csvLine joins the fields with commas and ends with CRLF', () => {
   assert.equal(csvLine(['a', 'b,c', 3]), 'a,"b,c",3\r\n');
 });
