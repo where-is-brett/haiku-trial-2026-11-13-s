@@ -6,6 +6,7 @@ import { featureOn } from './lib/flags.js';
 import { parseMonth, monthRows, totalsByCategory, renderMonth } from './lib/month.js';
 import { ensureCategoryColumn } from './lib/transactions.js';
 import { renderImportPage, handleImport } from './lib/import-page.js';
+import { exportRows, renderCsv, exportName } from './lib/export.js';
 
 const port = Number(process.env.PORT ?? 3000);
 const db = new DatabaseSync(process.env.LEDGER_DB ?? 'ledger.db');
@@ -46,6 +47,20 @@ const server = http.createServer(async (req, res) => {
     }
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
     res.end(page(renderMonth(m, totalsByCategory(monthRows(db, m)))));
+    return;
+  }
+  if (url.pathname === '/export' && featureOn('export-month')) {
+    const m = parseMonth(url.searchParams.get('m'));
+    if (m === null) {
+      res.writeHead(400, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('The month is needed as YYYY-MM');
+      return;
+    }
+    res.writeHead(200, {
+      'content-type': 'text/csv; charset=utf-8',
+      'content-disposition': `attachment; filename="${exportName(m)}"`,
+    });
+    res.end(renderCsv(exportRows(db, m)));
     return;
   }
   if (url.pathname === '/import' && featureOn('statement-import')) {
