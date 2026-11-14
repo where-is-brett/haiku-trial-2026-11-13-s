@@ -43,10 +43,21 @@ const SHOPS = [
   { name: 'Oakridge Dividends', category: 'income' },
 ];
 
+// Returns the SHOPS entry a transaction description matches, ignoring case, or undefined.
+function shopFor(description) {
+  const text = description.toLowerCase();
+  return SHOPS.find((s) => text.includes(s.name.toLowerCase()));
+}
+
+// Returns the canonical shop name a transaction description matches, or null when no shop name appears in it.
+export function shopNameFor(description) {
+  const shop = shopFor(description);
+  return shop ? shop.name : null;
+}
+
 // Returns the category key for a transaction description, ignoring case.
 // Returns 'other' when no shop name appears in the description.
 export function categoryFor(description) {
-  const text = description.toLowerCase();
-  const shop = SHOPS.find((s) => text.includes(s.name.toLowerCase()));
+  const shop = shopFor(description);
   return shop ? shop.category : 'other';
 }
