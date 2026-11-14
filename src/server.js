@@ -5,6 +5,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { featureOn } from './lib/flags.js';
 import { parseMonth, monthRows, totalsByCategory, renderMonth } from './lib/month.js';
 import { renderImportPage, handleImport } from './lib/import-page.js';
+import { monthsWithTransactions, renderMonthList } from './lib/home.js';
 
 const port = Number(process.env.PORT ?? 3000);
 const db = new DatabaseSync(process.env.LEDGER_DB ?? 'ledger.db');
@@ -30,7 +31,8 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
   if (url.pathname === '/') {
     const { n } = db.prepare('SELECT COUNT(*) AS n FROM transactions').get();
-    const body = n === 0 ? '<p>Nothing imported yet</p>' : `<p>${n} transactions imported</p>`;
+    let body = n === 0 ? '<p>Nothing imported yet</p>' : `<p>${n} transactions imported</p>`;
+    if (featureOn('statement-import')) body += renderMonthList(monthsWithTransactions(db));
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
     res.end(page(body));
     return;
