@@ -4,6 +4,7 @@ import { Readable } from 'node:stream';
 import { DatabaseSync } from 'node:sqlite';
 import { featureOn } from './lib/flags.js';
 import { parseMonth, monthRows, totalsByCategory, renderMonth } from './lib/month.js';
+import { ensureCategoryColumn } from './lib/transactions.js';
 import { renderImportPage, handleImport } from './lib/import-page.js';
 import { monthsWithTransactions, renderMonthList } from './lib/home.js';
 
@@ -12,6 +13,7 @@ const db = new DatabaseSync(process.env.LEDGER_DB ?? 'ledger.db');
 db.exec(
   'CREATE TABLE IF NOT EXISTS transactions (id INTEGER PRIMARY KEY, date TEXT, description TEXT, cents INTEGER)',
 );
+if (featureOn('edit-category')) ensureCategoryColumn(db);
 
 function page(body) {
   return `<!doctype html>

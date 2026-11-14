@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
 import { importStatement } from '../src/lib/import.js';
 import { StatementError } from '../src/lib/statement.js';
+import { ensureCategoryColumn } from '../src/lib/transactions.js';
 
 const STATEMENT = 'Date,Description,Amount\r\n03/08/2026,Greenbarrow Fresh REF 1021,54.20\r\n19/08/2026,"Smith, J",(40.00)\r\n';
 
@@ -83,4 +84,17 @@ test('a write that fails part-way rolls back the whole upload', () => {
   const text = 'Date,Description,Amount\r\n03/08/2026,Kestrel Coffee Bar,6.50\r\n04/08/2026,Boom,1.00\r\n';
   assert.throws(() => importStatement(db, text));
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM transactions').get().n, 0);
+});
+
+test('importing a statement again leaves a chosen category in place', () => {
+  const db = ledger();
+  ensureCategoryColumn(db);
+  importStatement(db, 'Date,Description,Amount\r\n03/08/2026,Kestrel Coffee Bar,6.50\r\n');
+  db.prepare("UPDATE transactions SET category = 'shopping' WHERE description = 'Kestrel Coffee Bar'").run();
+  importStatement(db, 'Date,Description,Amount\r\n03/08/2026,Kestrel Coffee Bar,6.50\r\n03/08/2026,Kestrel Coffee Bar,6.50\r\n');
+  const rows = db.prepare('SELECT id, category FROM transactions ORDER BY id').all().map((row) => ({ ...row }));
+  assert.deepEqual(rows, [
+    { id: 1, category: 'shopping' },
+    { id: 2, category: null },
+  ]);
 });
